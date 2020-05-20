@@ -1,159 +1,131 @@
-import _Vue, { WatchOptions } from "vue";
-
-// augment typings of Vue.js
-import "./vue";
-
-import { mapState, mapMutations, mapGetters, mapActions, createNamespacedHelpers } from "./helpers";
-
-export * from "./helpers";
-
-export declare class Store<S> {
-  constructor(options: StoreOptions<S>);
-
-  readonly state: S;
-  readonly getters: any;
-
-  replaceState(state: S): void;
-
-  dispatch: Dispatch;
-  commit: Commit;
-
-  subscribe<P extends MutationPayload>(fn: (mutation: P, state: S) => any, options?: SubscribeOptions): () => void;
-  subscribeAction<P extends ActionPayload>(fn: SubscribeActionOptions<P, S>, options?: SubscribeOptions): () => void;
-  watch<T>(getter: (state: S, getters: any) => T, cb: (value: T, oldValue: T) => void, options?: WatchOptions): () => void;
-
-  registerModule<T>(path: string, module: Module<T, S>, options?: ModuleOptions): void;
-  registerModule<T>(path: string[], module: Module<T, S>, options?: ModuleOptions): void;
-
-  unregisterModule(path: string): void;
-  unregisterModule(path: string[]): void;
-
-  hasModule(path: string): boolean;
-  hasModule(path: string[]): boolean;
-
-  hotUpdate(options: {
-    actions?: ActionTree<S, S>;
-    mutations?: MutationTree<S>;
-    getters?: GetterTree<S, S>;
-    modules?: ModuleTree<S>;
-  }): void;
+// import originalStore from './store'
+declare global {
+  /* eslint-disable @typescript-eslint/no-empty-interface */
+  interface VuexTS {}
 }
 
-export declare function install(Vue: typeof _Vue): void;
+export namespace Vuex {
+  type Options<S> = {
+    state: S;
+    modules?: {
+      [key: string]: Options<any>;
+    };
+    getters?: {
+      [key: string]: (state: S) => any;
+    };
+    mutations?: {
+      [key: string]: (state: S, payload: any) => void;
+    };
+    actions?: {
+      [key: string]: (state: S, payload: any) => void;
+    };
+    strict?: boolean;
+  }
+  
+  type Config = VuexTS extends Options<any> ? VuexTS : Options<any>
+  
+  type State = Config['state'] & {
+    [K in keyof Config['modules']]: Config['modules'][K]['state'] extends (...args: any) => infer R ? R : Config['modules'][K]['state'];
+  }
+  
+  type ModuleNames = keyof Config['modules']
+  
+  // type C<ModuleName extends keyof Config['modules']> = (Config['modules'][ModuleName] extends { getters: any } ? (a: Config['modules'][ModuleName]['getters']) => any : (a: {}) => any) extends (a: infer A) => any ? A : never
+  type ModulePart<ModuleName extends keyof Config['modules'], Part extends keyof Config> = Config['modules'][ModuleName] extends { [K in Part]: any } ? Config['modules'][ModuleName][Part] : {};
+  type ModulesPart<Part extends keyof Config, X extends ModuleNames = ModuleNames> = (X extends any ? (a: { [K in keyof ModulePart<X, Part>]: ModulePart<X, Part>[K] }) => void : never) extends (a: infer I) => void ? I : never
+  
+  type Getters = Config['getters'] & ModulesPart<'getters'>
+  type Mutations = Config['mutations'] & ModulesPart<'mutations'>
+  type Actions = Config['actions'] & ModulesPart<'actions'>
+  
+  interface StateMapper {
+    [key: string]: (keyof State) | ((state: State) => unknown);
+  }
+  interface MapState {
+    <K extends keyof State>(names: K[]): {
+      [X in K]: () => State[X]
+    };
+  
+    <O extends StateMapper>(config: O): {
+      [K in keyof O]: () =>
+        O[K] extends keyof State ? State[O[K]] :
+        O[K] extends (...args: any) => any ? ReturnType<O[K]> : never
+    };
+  }
+  
+  interface GettersMapper {
+    [key: string]: keyof Getters;
+  }
+  interface MapGetters {
+    <K extends keyof Getters>(names: K[]): {
+      [X in K]: () => ReturnType<Getters[X]>
+    };
+  
+    <O extends GettersMapper>(config: O): {
+      [K in keyof O]: () => ReturnType<Getters[O[K]]>
+    };
+  }
+  
+  interface MutationsMapper {
+    [key: string]: keyof Mutations;
+  }
+  interface MapMutations {
+    <K extends keyof Mutations>(names: K[]): {
+      [X in K]: (payload: Parameters<Mutations[X]>[1]) => void
+    };
+  
+    <O extends MutationsMapper>(config: O): {
+      [K in keyof O]: (payload: Parameters<Mutations[O[K]]>[1]) => void
+    };
+  }
+  
+  interface ActionsMapper {
+    [key: string]: keyof Actions;
+  }
+  interface MapActions {
+    <K extends keyof Actions>(names: K[]): {
+      [X in K]: (payload: Parameters<Actions[X]>[1]) => void
+    };
+  
+    <O extends ActionsMapper>(config: O): {
+      [K in keyof O]: (payload: Parameters<Actions[O[K]]>[1]) => void
+    };
+  }
+  
+  interface Store {
+    state: Readonly<State>;
+    getters: {
+      readonly [K in keyof Getters]: ReturnType<Getters[K]>
+    };
+    commit<T extends keyof Mutations>(payload: Mutations[T] extends object ? ({ type: T } & Parameters<Mutations[T]>[1]) : never): void;
+    commit<T extends keyof Mutations>(type: T, payload?: Parameters<Mutations[T]>[1]): void;
+    dispatch<T extends keyof Actions>(payload: Actions[T] extends object ? ({ type: T } & Parameters<Actions[T]>[1]) : never): ReturnType<Actions[T]>;
+    dispatch<T extends keyof Actions>(type: T, payload?: Parameters<Actions[T]>[1]): ReturnType<Actions[T]>;
+  }
+  
+  
+  // const store = originalStore as any as Store
+  
+  // export default store
 
-export interface Dispatch {
-  (type: string, payload?: any, options?: DispatchOptions): Promise<any>;
-  <P extends Payload>(payloadWithType: P, options?: DispatchOptions): Promise<any>;
 }
 
-export interface Commit {
-  (type: string, payload?: any, options?: CommitOptions): void;
-  <P extends Payload>(payloadWithType: P, options?: CommitOptions): void;
+export declare const mapState: Vuex.MapState
+export declare const mapGetters: Vuex.MapGetters
+export declare const mapMutations: Vuex.MapMutations
+export declare const mapActions: Vuex.MapActions
+
+export declare function Store<S, O extends Vuex.Options<S>>(options: O): Vuex.Store
+export declare function create<S, O extends Omit<Vuex.Options<S>, 'state'>>(state: S, options: O): O & { state: S }
+
+declare module 'vue/types/vue' {
+  interface Vue {
+    $store: Vuex.Store;
+  }
 }
 
-export interface ActionContext<S, R> {
-  dispatch: Dispatch;
-  commit: Commit;
-  state: S;
-  getters: any;
-  rootState: R;
-  rootGetters: any;
+declare module "vue/types/options" {
+  interface ComponentOptions {
+    store?: Vuex.Store;
+  }
 }
-
-export interface Payload {
-  type: string;
-}
-
-export interface MutationPayload extends Payload {
-  payload: any;
-}
-
-export interface ActionPayload extends Payload {
-  payload: any;
-}
-
-export interface SubscribeOptions {
-  prepend?: boolean
-}
-
-export type ActionSubscriber<P, S> = (action: P, state: S) => any;
-export type ActionErrorSubscriber<P, S> = (action: P, state: S, error: Error) => any;
-
-export interface ActionSubscribersObject<P, S> {
-  before?: ActionSubscriber<P, S>;
-  after?: ActionSubscriber<P, S>;
-  error?: ActionErrorSubscriber<P, S>;
-}
-
-export type SubscribeActionOptions<P, S> = ActionSubscriber<P, S> | ActionSubscribersObject<P, S>;
-
-export interface DispatchOptions {
-  root?: boolean;
-}
-
-export interface CommitOptions {
-  silent?: boolean;
-  root?: boolean;
-}
-
-export interface StoreOptions<S> {
-  state?: S | (() => S);
-  getters?: GetterTree<S, S>;
-  actions?: ActionTree<S, S>;
-  mutations?: MutationTree<S>;
-  modules?: ModuleTree<S>;
-  plugins?: Plugin<S>[];
-  strict?: boolean;
-  devtools?: boolean;
-}
-
-export type ActionHandler<S, R> = (this: Store<R>, injectee: ActionContext<S, R>, payload?: any) => any;
-export interface ActionObject<S, R> {
-  root?: boolean;
-  handler: ActionHandler<S, R>;
-}
-
-export type Getter<S, R> = (state: S, getters: any, rootState: R, rootGetters: any) => any;
-export type Action<S, R> = ActionHandler<S, R> | ActionObject<S, R>;
-export type Mutation<S> = (state: S, payload?: any) => any;
-export type Plugin<S> = (store: Store<S>) => any;
-
-export interface Module<S, R> {
-  namespaced?: boolean;
-  state?: S | (() => S);
-  getters?: GetterTree<S, R>;
-  actions?: ActionTree<S, R>;
-  mutations?: MutationTree<S>;
-  modules?: ModuleTree<R>;
-}
-
-export interface ModuleOptions {
-  preserveState?: boolean;
-}
-
-export interface GetterTree<S, R> {
-  [key: string]: Getter<S, R>;
-}
-
-export interface ActionTree<S, R> {
-  [key: string]: Action<S, R>;
-}
-
-export interface MutationTree<S> {
-  [key: string]: Mutation<S>;
-}
-
-export interface ModuleTree<R> {
-  [key: string]: Module<any, R>;
-}
-
-declare const _default: {
-  Store: typeof Store;
-  install: typeof install;
-  mapState: typeof mapState,
-  mapMutations: typeof mapMutations,
-  mapGetters: typeof mapGetters,
-  mapActions: typeof mapActions,
-  createNamespacedHelpers: typeof createNamespacedHelpers,
-};
-export default _default;
