@@ -1,4 +1,5 @@
-// import originalStore from './store'
+import Vue from 'vue'
+
 declare global {
   /* eslint-disable @typescript-eslint/no-empty-interface */
   interface VuexTS {}
@@ -132,7 +133,7 @@ declare module 'vue/types/vue' {
 }
 
 declare module "vue/types/options" {
-  interface ComponentOptions {
+  interface ComponentOptions<V extends Vue> {
     store?: Vuex.Store;
   }
 }
