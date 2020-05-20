@@ -122,6 +122,7 @@ export declare class Store<S, O extends Vuex.Options<S>> implements Vuex.Store {
   commit: Vuex.Store['commit'];
   getters: Vuex.Store['getters'];
   state: Vuex.Store['state'];
+  watch<T>(getter: (state: Vuex.State) => T, handler: Vue.WatchHandler<T>, options: Vue.WatchOptions): void;
 }
 
 export declare function install(): void;
