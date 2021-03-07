@@ -85,11 +85,11 @@ export namespace Vuex {
   }
   interface MapActions {
     <K extends keyof Actions>(names: K[]): {
-      [X in K]: (payload: Parameters<Actions[X]>[1]) => void
+      [X in K]: (payload: Parameters<Actions[X]>[1]) => ReturnType<Actions[X]>
     };
 
     <O extends ActionsMapper>(config: O): {
-      [K in keyof O]: (payload: Parameters<Actions[O[K]]>[1]) => void
+      [K in keyof O]: (payload: Parameters<Actions[O[K]]>[1]) => ReturnType<Actions[O[K]]>
     };
   }
 
@@ -129,7 +129,7 @@ export declare function install(): void;
 
 declare module 'vue/types/vue' {
   interface Vue {
-    $store: Vuex.Store;
+    $store: Store;
   }
 }
 
