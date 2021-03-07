@@ -129,7 +129,7 @@ export declare function install(): void;
 
 declare module 'vue/types/vue' {
   interface Vue {
-    $store: Store;
+    $store: Vuex.Store;
   }
 }
 
